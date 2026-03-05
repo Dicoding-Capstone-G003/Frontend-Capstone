@@ -1,2 +1,2 @@
 # Frontend-Capstone
-Capstone project dari Dicoding AI bootcamp Batch 10 2025-2026
+Fronend menggunakan React vite untuk arsitekture nya dan leaflet untuk bantuan Peta
