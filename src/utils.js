@@ -49,9 +49,16 @@ export function buildChartData(forecast) {
 }
 
 export function normalizeRegions(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.regions)) return payload.regions;
-  return [];
+  const regionList = Array.isArray(payload) ? payload : Array.isArray(payload?.regions) ? payload.regions : [];
+
+  return regionList
+    .map((region) => {
+      if (typeof region === 'string') return region;
+      if (typeof region?.name === 'string') return region.name;
+      if (typeof region?.region_name === 'string') return region.region_name;
+      return null;
+    })
+    .filter((regionName) => typeof regionName === 'string' && regionName.trim().length > 0);
 }
 
 export function normalizeLogs(payload) {

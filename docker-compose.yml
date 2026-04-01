@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: https://api.db10-g003.my.id
     container_name: frontend-capstone
     ports:
       - "8012:8012"

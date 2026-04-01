@@ -1,86 +1,79 @@
 <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Solar PV Intelligence | Premium Dashboard</title>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Solar PV Intelligence | Premium Dashboard</title>
 
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-        
-        <link rel="stylesheet" href="style.css">
-        
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </head>
-    <body>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="./style.css" />
 
-        <aside class="sidebar">
-            <div class="brand">
-                <span>⚡</span> SolarIntelligence
-            </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <span>&#9889;</span> SolarIntelligence
+      </div>
 
-            <div class="section-label">Konfigurasi Sistem</div>
-            
-            <div class="input-group">
-                <label>Pilih Wilayah</label>
-                <select id="region">
-                    <option value="Papua">Papua</option>
-                    <option value="Maluku">Maluku</option>
-                    <option value="Nusa Tenggara" selected>Nusa Tenggara</option>
-                    <option value="Sulawesi">Sulawesi</option>
-                    <option value="Kalimantan">Kalimantan</option>
-                    <option value="Jawa">Jawa</option>
-                    <option value="Sumatra">Sumatra</option>
-                </select>
-            </div>
+      <div class="section-label">Konfigurasi Sistem</div>
 
-            <div class="input-group">
-                <label>Kapasitas Panel</label>
-                <select>
-                    <option>1 kWp</option>
-                    <option>3 kWp</option>
-                    <option selected>5 kWp</option>
-                </select>
-            </div>
+      <div class="input-group">
+        <label for="region">Pilih Wilayah</label>
+        <select id="region"></select>
+      </div>
 
-            <div class="section-label">Estimasi Harian</div>
-            <div class="stats-grid">
-                <div class="stat-card stat-peak">
-                    <span>⚡ Peak</span>
-                    <b>2.66 kWh</b>
-                </div>
-                <div class="stat-card stat-avg">
-                    <span>📊 Average</span>
-                    <b>1.38 kWh</b>
-                </div>
-                <div class="stat-card stat-min">
-                    <span>📉 Min</span>
-                    <b>0.05 kWh</b>
-                </div>
-                <div class="stat-card stat-prob">
-                    <span>🎯 Prob</span>
-                    <b>0.52</b>
-                </div>
-            </div>
-        </aside>
+      <div class="input-group">
+        <label for="capacity">Kapasitas Panel</label>
+        <select id="capacity">
+          <option value="1">1 kWp</option>
+          <option value="3">3 kWp</option>
+          <option value="5" selected>5 kWp</option>
+          <option value="10">10 kWp</option>
+        </select>
+      </div>
 
-        <main class="main-content">
-            <div id="map-card" class="card-container">
-                <div id="map"></div>
-            </div>
+      <div class="status-panel" id="status-panel">Menghubungkan ke API...</div>
 
-            <div id="chart-card" class="card-container">
-                <div class="chart-header">
-                    <h3>Grafik Output Energi</h3>
-                    <p>Estimasi produksi daya per jam (kWh)</p>
-                </div>
-                <div class="canvas-wrapper">
-                    <canvas id="chart"></canvas>
-                </div>
-            </div>
-        </main>
+      <div class="section-label">Estimasi Harian</div>
+      <div class="stats-grid">
+        <div class="stat-card stat-peak">
+          <span>Peak</span>
+          <b id="peak-value">-</b>
+        </div>
+        <div class="stat-card stat-avg">
+          <span>Average</span>
+          <b id="avg-value">-</b>
+        </div>
+        <div class="stat-card stat-min">
+          <span>Min</span>
+          <b id="min-value">-</b>
+        </div>
+        <div class="stat-card stat-prob">
+          <span>Prob</span>
+          <b id="prob-value">-</b>
+        </div>
+      </div>
+    </aside>
 
-        <script src="script.js"></script>
-    </body>
+    <main class="main-content">
+      <section id="map-card" class="card-container">
+        <div id="map"></div>
+      </section>
+
+      <section id="chart-card" class="card-container">
+        <div class="chart-header">
+          <h3>Grafik Output Energi</h3>
+          <p>Estimasi produksi daya per jam (kWh)</p>
+        </div>
+        <div class="canvas-wrapper">
+          <canvas id="chart"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script defer src="./script.js"></script>
+  </body>
 </html>

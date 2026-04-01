@@ -50,6 +50,31 @@ body {
 
 .input-group { margin-bottom: 24px; }
 
+.status-panel {
+    margin-bottom: 24px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+}
+
+.status-panel--info {
+    border-color: #334155;
+}
+
+.status-panel--success {
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #d1fae5;
+}
+
+.status-panel--error {
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fecaca;
+}
+
 label { 
     display: block; 
     font-size: 0.8rem; 
