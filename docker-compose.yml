@@ -1,0 +1,9 @@
+services:
+  frontend-capstone:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frontend-capstone
+    ports:
+      - "8012:8012"
+    restart: unless-stopped
