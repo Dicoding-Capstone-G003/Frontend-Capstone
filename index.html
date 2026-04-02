@@ -55,8 +55,8 @@
           <b id="min-value">-</b>
         </div>
         <div class="stat-card stat-prob">
-          <span>Prob</span>
-          <b id="prob-value">-</b>
+          <span>Sun Hours</span>
+          <b id="sun-hours-value">-</b>
         </div>
       </div>
 
@@ -90,9 +90,19 @@
 
       <section id="chart-card" class="card-container">
         <div class="chart-header">
-          <h3>Grafik Output Energi</h3>
-          <p>Estimasi produksi daya per jam (kWh)</p>
+          <div>
+            <h3>Grafik Output Energi</h3>
+            <p>Estimasi produksi daya per jam (kWh)</p>
+          </div>
+          <!-- <div class="chart-actions">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-reference" checked />
+              <span class="toggle-switch__slider" aria-hidden="true"></span>
+              <span class="toggle-switch__label">Compare Open-Meteo</span>
+            </label>
+          </div> -->
         </div>
+        <p class="chart-note" id="chart-note">Window forecast akan mengikuti timestamp dari API.</p>
         <div class="canvas-wrapper">
           <canvas id="chart"></canvas>
         </div>

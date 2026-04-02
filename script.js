@@ -17,7 +17,9 @@ const statusPanel = document.getElementById('status-panel');
 const peakValue = document.getElementById('peak-value');
 const avgValue = document.getElementById('avg-value');
 const minValue = document.getElementById('min-value');
-const probValue = document.getElementById('prob-value');
+const sunHoursValue = document.getElementById('sun-hours-value');
+// const toggleReference = document.getElementById('toggle-reference');
+const chartNote = document.getElementById('chart-note');
 
 const indonesiaBounds = L.latLngBounds([-11.0, 94.0], [6.0, 141.0]);
 
@@ -38,13 +40,78 @@ const gradient = chartContext.createLinearGradient(0, 0, 0, 400);
 gradient.addColorStop(0, 'rgba(245, 158, 11, 0.5)');
 gradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
 
+const currentTimeMarkerPlugin = {
+  id: 'currentTimeMarker',
+  afterDatasetsDraw(chart, _args, pluginOptions) {
+    const hours = pluginOptions?.hours || [];
+    if (!hours.length) return;
+
+    const xScale = chart.scales.x;
+    const yScale = chart.scales.y;
+    if (!xScale || !yScale) return;
+
+    const points = hours.map((hour) => new Date(hour).getTime()).filter((time) => Number.isFinite(time));
+    if (!points.length) return;
+
+    const now = Date.now();
+    const first = points[0];
+    const last = points[points.length - 1];
+
+    if (now < first || now > last) return;
+
+    let markerX = null;
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const start = points[index];
+      const end = points[index + 1];
+
+      if (now >= start && now <= end) {
+        const startX = xScale.getPixelForValue(index);
+        const endX = xScale.getPixelForValue(index + 1);
+        const ratio = end === start ? 0 : (now - start) / (end - start);
+        markerX = startX + (endX - startX) * ratio;
+        break;
+      }
+    }
+
+    if (markerX === null && now === last) {
+      markerX = xScale.getPixelForValue(points.length - 1);
+    }
+
+    if (markerX === null) return;
+
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(markerX, chartArea.top);
+    ctx.lineTo(markerX, chartArea.bottom);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Current time', markerX + 6, chartArea.top + 14);
+    ctx.restore();
+  },
+};
+
+Chart.register(currentTimeMarkerPlugin);
+
+let currentForecast = {
+  hours: [],
+  modelValues: [],
+  referenceValues: [],
+};
+
 const chart = new Chart(chartContext, {
   type: 'line',
   data: {
     labels: [],
     datasets: [
       {
-        label: 'Produksi (kWh)',
+        label: 'Model',
         data: [],
         borderColor: '#f59e0b',
         borderWidth: 3,
@@ -54,6 +121,18 @@ const chart = new Chart(chartContext, {
         pointBackgroundColor: '#fff',
         pointBorderColor: '#f59e0b',
         pointHoverRadius: 7,
+      },
+      {
+        label: 'Open-Meteo',
+        data: [],
+        borderColor: '#0ea5e9',
+        borderWidth: 3,
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.35,
+        pointBackgroundColor: '#ffffff',
+        pointBorderColor: '#0ea5e9',
+        pointHoverRadius: 6,
       },
     ],
   },
@@ -67,6 +146,9 @@ const chart = new Chart(chartContext, {
         titleFont: { family: 'Inter' },
         padding: 12,
         cornerRadius: 8,
+      },
+      currentTimeMarker: {
+        hours: [],
       },
     },
     scales: {
@@ -88,11 +170,10 @@ function formatEnergy(value) {
   return `${value.toFixed(2)} kWh`;
 }
 
-function formatProbability(values) {
+function formatSunHours(values) {
   if (!Array.isArray(values) || values.length === 0) return '-';
   const positiveCount = values.filter((value) => value > 0).length;
-  const score = positiveCount / values.length;
-  return score.toFixed(2);
+  return `${positiveCount} h`;
 }
 
 function updateStatus(message, type = 'info') {
@@ -117,7 +198,7 @@ function updateStats(values) {
     peakValue.textContent = '-';
     avgValue.textContent = '-';
     minValue.textContent = '-';
-    probValue.textContent = '-';
+    sunHoursValue.textContent = '-';
     return;
   }
 
@@ -125,17 +206,42 @@ function updateStats(values) {
   peakValue.textContent = formatEnergy(Math.max(...values));
   avgValue.textContent = formatEnergy(total / values.length);
   minValue.textContent = formatEnergy(Math.min(...values));
-  probValue.textContent = formatProbability(values);
+  sunHoursValue.textContent = formatSunHours(values);
 }
 
-function updateChart(hours, values) {
+function formatHourLabel(hour) {
+  return new Date(hour).toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function updateChartNote(hours) {
+  if (!hours.length) {
+    chartNote.textContent = 'Window forecast akan mengikuti timestamp dari API.';
+    return;
+  }
+
+  const startLabel = formatHourLabel(hours[0]);
+  const endLabel = formatHourLabel(hours[hours.length - 1]);
+  chartNote.textContent = `Window forecast API: ${startLabel} - ${endLabel}. Garis merah mengikuti waktu browser Anda.`;
+}
+
+function renderChart() {
+  const { hours, modelValues, referenceValues } = currentForecast;
+
   chart.data.labels = hours.map((hour) =>
     new Date(hour).toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
     }),
   );
-  chart.data.datasets[0].data = values;
+  chart.data.datasets[0].data = modelValues;
+  chart.data.datasets[0].hidden = false;
+  chart.data.datasets[1].data = referenceValues;
+  // chart.data.datasets[1].hidden = !toggleReference.checked;
+  chart.data.datasets[1].hidden = false;
+  chart.options.plugins.currentTimeMarker.hours = hours;
   chart.update();
 }
 
@@ -187,11 +293,19 @@ async function loadForecast(regionName) {
     });
 
     const rawValues = Array.isArray(forecast.model_prediction) ? forecast.model_prediction : [];
+    const rawReferenceValues = Array.isArray(forecast.openmeteo_reference) ? forecast.openmeteo_reference : [];
     const rawHours = Array.isArray(forecast.forecast_hours) ? forecast.forecast_hours : [];
     const scaledValues = applyCapacity(rawValues);
+    const scaledReferenceValues = applyCapacity(rawReferenceValues);
+    currentForecast = {
+      hours: rawHours,
+      modelValues: scaledValues,
+      referenceValues: scaledReferenceValues,
+    };
 
     updateMap(regionName);
-    updateChart(rawHours, scaledValues);
+    renderChart();
+    updateChartNote(rawHours);
     updateStats(scaledValues);
     updateStatus(`Forecast ${regionName} berhasil dimuat.`, 'success');
   } catch (error) {
@@ -242,5 +356,15 @@ regionSelect.addEventListener('change', () => {
 capacitySelect.addEventListener('change', () => {
   loadForecast(regionSelect.value);
 });
+
+// toggleReference.addEventListener('change', () => {
+//   renderChart();
+// });
+
+setInterval(() => {
+  if (currentForecast.hours.length) {
+    chart.draw();
+  }
+}, 60000);
 
 initializeDashboard();
