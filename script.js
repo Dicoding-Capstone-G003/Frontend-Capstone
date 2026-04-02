@@ -1,5 +1,6 @@
 const DEFAULT_API_BASE_URL = 'https://api.db10-g003.my.id';
 const API_BASE_URL = DEFAULT_API_BASE_URL;
+const REQUEST_TIMEOUT_MS = 10000;
 
 const fallbackLocations = {
   Papua: [-4.2, 138],
@@ -104,6 +105,14 @@ let currentForecast = {
   modelValues: [],
   referenceValues: [],
 };
+
+function getDefaultRegionName() {
+  return 'Jawa';
+}
+
+function setRegionOptions(regionNames) {
+  regionSelect.innerHTML = regionNames.map((region) => `<option value="${region}">${region}</option>`).join('');
+}
 
 const chart = new Chart(chartContext, {
   type: 'line',
@@ -246,13 +255,31 @@ function renderChart() {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+
+    throw error;
+  }
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     throw new Error(`API error ${response.status}`);
@@ -262,7 +289,13 @@ async function request(path, options = {}) {
 }
 
 function normalizeRegions(payload) {
-  const items = Array.isArray(payload) ? payload : Array.isArray(payload?.regions) ? payload.regions : [];
+  const items = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.regions)
+      ? payload.regions
+      : Array.isArray(payload?.items)
+        ? payload.items
+        : [];
 
   return items
     .map((item) => {
@@ -315,6 +348,9 @@ async function loadForecast(regionName) {
 
 async function initializeDashboard() {
   updateStatus('Menghubungkan ke API...', 'info');
+  setRegionOptions(Object.keys(fallbackLocations));
+  regionSelect.value = getDefaultRegionName();
+  updateMap(regionSelect.value);
 
   try {
     const regionPayload = await request('/regions');
@@ -331,20 +367,18 @@ async function initializeDashboard() {
       return result;
     }, { ...fallbackLocations });
 
-    regionSelect.innerHTML = regions
-      .map((region) => `<option value="${region.name}">${region.name}</option>`)
-      .join('');
+    setRegionOptions(regions.map((region) => region.name));
 
-    const defaultRegion = regions.some((region) => region.name === 'Kalimantan') ? 'Kalimantan' : regions[0].name;
+    const defaultRegion = regions.some((region) => region.name === getDefaultRegionName())
+      ? getDefaultRegionName()
+      : regions[0].name;
     regionSelect.value = defaultRegion;
 
     await loadForecast(defaultRegion);
   } catch (error) {
-    regionSelect.innerHTML = Object.keys(fallbackLocations)
-      .map((region) => `<option value="${region}">${region}</option>`)
-      .join('');
-    regionSelect.value = 'Kalimantan';
-    updateMap('Kalimantan');
+    setRegionOptions(Object.keys(fallbackLocations));
+    regionSelect.value = getDefaultRegionName();
+    updateMap(regionSelect.value);
     updateStatus(`Gagal mengambil data region: ${error.message}`, 'error');
   }
 }
