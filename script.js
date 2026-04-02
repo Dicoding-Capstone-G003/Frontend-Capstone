@@ -67,8 +67,8 @@ const currentTimeMarkerPlugin = {
       const end = points[index + 1];
 
       if (now >= start && now <= end) {
-        const startX = xScale.getPixelForValue(index);
-        const endX = xScale.getPixelForValue(index + 1);
+        const startX = xScale.getPixelForValue(chart.data.labels[index], index);
+        const endX = xScale.getPixelForValue(chart.data.labels[index + 1], index + 1);
         const ratio = end === start ? 0 : (now - start) / (end - start);
         markerX = startX + (endX - startX) * ratio;
         break;
@@ -76,7 +76,7 @@ const currentTimeMarkerPlugin = {
     }
 
     if (markerX === null && now === last) {
-      markerX = xScale.getPixelForValue(points.length - 1);
+      markerX = xScale.getPixelForValue(chart.data.labels[points.length - 1], points.length - 1);
     }
 
     if (markerX === null) return;
